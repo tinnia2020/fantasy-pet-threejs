@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>奇幻生物庇護所 - 真3D版 🌟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(180deg, #a8d8ea 0%, #d4f1f4 100%);
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .ui-overlay {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            pointer-events: none;
+        }
+
+        .ui-overlay > * {
+            pointer-events: auto;
+        }
+
+        /* 狀態欄 */
+        .status-bar {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            padding-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 10px 15px;
+            border-radius: 25px;
+            color: #2c5f77;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 中間區域 */
+        .center-ui {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 20px;
+            pointer-events: none;
+        }
+
+        .pet-name {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+            pointer-events: auto;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .controls-hint {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* 好感度條 */
+        .love-meter {
+            width: 85%;
+            max-width: 320px;
+            margin-bottom: 15px;
+            pointer-events: auto;
+        }
+
+        .love-label {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .love-bar {
+            height: 26px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 13px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .love-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b9d 0%, #ffa8c5 50%, #ff6b9d 100%);
+            background-size: 200% 100%;
+            transition: width 0.6s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 狀態徽章 */
+        .pet-stats {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            pointer-events: auto;
+        }
+
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(15px);
+            padding: 10px 15px;
+            border-radius: 20px;
+            color: #2c5f77;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 互動按鈕 */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border-radius: 30px 30px 0 0;
+            box-shadow: 0 -5px 30px rgba(0,0,0,0.1);
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: #2c5f77;
+            padding: 18px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .action-icon {
+            font-size: 32px;
+        }
+
+        /* 訊息彈窗 */
+        .message-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 35px;
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+            min-width: 240px;
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 3px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .message-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .message-icon {
+            font-size: 70px;
+            margin-bottom: 15px;
+        }
+
+        .message-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c5f77;
+            margin-bottom: 8px;
+        }
+
+        .message-detail {
+            font-size: 14px;
+            color: #5a8ca8;
+        }
+
+        /* Loading */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #a8d8ea 0%, #d4f1f4 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">載入中...</div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- UI 覆蓋層 -->
+    <div class="ui-overlay">
+        <!-- 狀態欄 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span>💰</span>
+                <span id="coins">100</span>
+            </div>
+            <div class="status-item">
+                <span>⭐</span>
+                <span id="level">1</span>
+            </div>
+            <div class="status-item">
+                <span>🎂</span>
+                <span id="days">第 1 天</span>
+            </div>
+        </div>
+
+        <!-- 中間UI -->
+        <div class="center-ui">
+            <div class="pet-name">雲棉獸</div>
+            <div class="controls-hint">👆 拖曳旋轉 | 👉 點擊互動</div>
+
+            <!-- 好感度條 -->
+            <div class="love-meter">
+                <div class="love-label">
+                    <span>❤️ 好感度</span>
+                    <span id="lovePercent">0%</span>
+                </div>
+                <div class="love-bar">
+                    <div class="love-fill" id="loveFill" style="width: 0%">
+                        <span style="font-size: 14px;">💕</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 狀態顯示 -->
+            <div class="pet-stats">
+                <div class="stat-badge">
+                    <span>😋</span>
+                    <span id="hunger">100</span>
+                </div>
+                <div class="stat-badge">
+                    <span>😊</span>
+                    <span id="happiness">100</span>
+                </div>
+                <div class="stat-badge">
+                    <span>✨</span>
+                    <span id="cleanliness">100</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 互動按鈕 -->
+        <div class="action-buttons">
+            <button class="action-btn" onclick="feedPet()">
+                <div class="action-icon">🍎</div>
+                <div>餵食 -10💰</div>
+            </button>
+            <button class="action-btn" onclick="playWithPet()">
+                <div class="action-icon">⚽</div>
+                <div>玩耍 -5💰</div>
+            </button>
+            <button class="action-btn" onclick="cleanPet()">
+                <div class="action-icon">🛁</div>
+                <div>清潔 -5💰</div>
+            </button>
+            <button class="action-btn" onclick="giveTreat()">
+                <div class="action-icon">🍰</div>
+                <div>點心 -20💰</div>
+            </button>
+            <button class="action-btn" onclick="petPet()">
+                <div class="action-icon">🤗</div>
+                <div>撫摸 免費</div>
+            </button>
+            <button class="action-btn" onclick="resetCamera()">
+                <div class="action-icon">🔄</div>
+                <div>重置視角</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 訊息彈窗 -->
+    <div class="message-popup" id="messagePopup">
+        <div class="message-icon" id="messageIcon"></div>
+        <div class="message-text" id="messageText"></div>
+        <div class="message-detail" id="messageDetail"></div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        // ===== 遊戲狀態 =====
+        let gameState = {
+            coins: 100,
+            level: 1,
+            days: 1,
+            love: 0,
+            hunger: 100,
+            happiness: 100,
+            cleanliness: 100,
+        };
+
+        // ===== Three.js 設置 =====
+        let scene, camera, renderer, creature, bubbles = [];
+        let isAnimating = false;
+
+        function initThreeJS() {
+            // 場景
+            scene = new THREE.Scene();
+            scene.background = null; // 透明背景
+
+            // 相機
+            camera = new THREE.PerspectiveCamera(
+                50,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 0, 8);
+
+            // 渲染器
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true 
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // 光源
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7.5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            const pointLight = new THREE.PointLight(0xa8d8ea, 0.5, 100);
+            pointLight.position.set(-5, 3, 5);
+            scene.add(pointLight);
+
+            // 創建生物
+            createCreature();
+
+            // 創建泡泡
+            createBubbles();
+
+            // 窗口大小調整
+            window.addEventListener('resize', onWindowResize);
+
+            // 觸控/滑鼠控制
+            setupControls();
+
+            // 開始渲染
+            animate();
+
+            // 隱藏 loading
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hide');
+            }, 500);
+        }
+
+        function createCreature() {
+            creature = new THREE.Group();
+
+            // 主身體 - 毛茸茸的球體
+            const bodyGeometry = new THREE.SphereGeometry(1.2, 32, 32);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: 0xf0f9ff,
+                roughness: 0.7,
+                metalness: 0.1,
+                emissive: 0xe0f2fe,
+                emissiveIntensity: 0.2
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            creature.add(body);
+
+            // 左耳
+            const earGeometry = new THREE.ConeGeometry(0.25, 0.7, 16);
+            const earMaterial = new THREE.MeshStandardMaterial({
+                color: 0xf0f9ff,
+                roughness: 0.7
+            });
+            const leftEar = new THREE.Mesh(earGeometry, earMaterial);
+            leftEar.position.set(-0.5, 1.2, 0.2);
+            leftEar.rotation.z = -0.3;
+            leftEar.castShadow = true;
+            creature.add(leftEar);
+
+            // 右耳
+            const rightEar = new THREE.Mesh(earGeometry, earMaterial);
+            rightEar.position.set(0.5, 1.2, 0.2);
+            rightEar.rotation.z = 0.3;
+            rightEar.castShadow = true;
+            creature.add(rightEar);
+
+            // 左耳內側
+            const innerEarGeometry = new THREE.ConeGeometry(0.12, 0.35, 16);
+            const innerEarMaterial = new THREE.MeshStandardMaterial({
+                color: 0xfecaca,
+                roughness: 0.8
+            });
+            const leftInnerEar = new THREE.Mesh(innerEarGeometry, innerEarMaterial);
+            leftInnerEar.position.set(-0.5, 1.2, 0.3);
+            leftInnerEar.rotation.z = -0.3;
+            creature.add(leftInnerEar);
+
+            const rightInnerEar = new THREE.Mesh(innerEarGeometry, innerEarMaterial);
+            rightInnerEar.position.set(0.5, 1.2, 0.3);
+            rightInnerEar.rotation.z = 0.3;
+            creature.add(rightInnerEar);
+
+            // 眼睛底座
+            const eyeWhiteGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+            const eyeWhiteMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.2
+            });
+            const leftEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
+            leftEyeWhite.position.set(-0.35, 0.3, 1.0);
+            creature.add(leftEyeWhite);
+
+            const rightEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
+            rightEyeWhite.position.set(0.35, 0.3, 1.0);
+            creature.add(rightEyeWhite);
+
+            // 眼球
+            const eyeGeometry = new THREE.SphereGeometry(0.18, 16, 16);
+            const eyeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0ea5e9,
+                roughness: 0.1,
+                metalness: 0.3
+            });
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.35, 0.3, 1.15);
+            creature.add(leftEye);
+
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.35, 0.3, 1.15);
+            creature.add(rightEye);
+
+            // 瞳孔
+            const pupilGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+            const pupilMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0369a1,
+                roughness: 0.3
+            });
+            const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            leftPupil.position.set(-0.35, 0.3, 1.25);
+            creature.add(leftPupil);
+
+            const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            rightPupil.position.set(0.35, 0.3, 1.25);
+            creature.add(rightPupil);
+
+            // 眼睛高光
+            const highlightGeometry = new THREE.SphereGeometry(0.06, 8, 8);
+            const highlightMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff
+            });
+            const leftHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+            leftHighlight.position.set(-0.3, 0.38, 1.28);
+            creature.add(leftHighlight);
+
+            const rightHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+            rightHighlight.position.set(0.4, 0.38, 1.28);
+            creature.add(rightHighlight);
+
+            // 鼻子
+            const noseGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const noseMaterial = new THREE.MeshStandardMaterial({
+                color: 0xfda4af,
+                roughness: 0.5
+            });
+            const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+            nose.position.set(0, 0, 1.2);
+            creature.add(nose);
+
+            // 腮紅
+            const blushGeometry = new THREE.CircleGeometry(0.15, 16);
+            const blushMaterial = new THREE.MeshBasicMaterial({
+                color: 0xfca5a5,
+                transparent: true,
+                opacity: 0.4
+            });
+            const leftBlush = new THREE.Mesh(blushGeometry, blushMaterial);
+            leftBlush.position.set(-0.7, 0, 0.9);
+            leftBlush.rotation.y = -0.5;
+            creature.add(leftBlush);
+
+            const rightBlush = new THREE.Mesh(blushGeometry, blushMaterial);
+            rightBlush.position.set(0.7, 0, 0.9);
+            rightBlush.rotation.y = 0.5;
+            creature.add(rightBlush);
+
+            scene.add(creature);
+            creature.userData = { leftEar, rightEar, body };
+        }
+
+        function createBubbles() {
+            const bubbleGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const bubbleMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0,
+                metalness: 0,
+                transmission: 0.9,
+                thickness: 0.5
+            });
+
+            for (let i = 0; i < 15; i++) {
+                const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
+                bubble.position.set(
+                    (Math.random() - 0.5) * 10,
+                    Math.random() * -5,
+                    (Math.random() - 0.5) * 5
+                );
+                bubble.userData = {
+                    speed: Math.random() * 0.01 + 0.005,
+                    wobble: Math.random() * 0.02
+                };
+                scene.add(bubble);
+                bubbles.push(bubble);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = Date.now() * 0.001;
+
+            // 生物呼吸動畫
+            if (creature) {
+                creature.position.y = Math.sin(time * 0.8) * 0.1;
+                creature.userData.body.scale.set(
+                    1 + Math.sin(time * 0.8) * 0.03,
+                    1 + Math.sin(time * 0.8) * 0.03,
+                    1 + Math.sin(time * 0.8) * 0.03
+                );
+
+                // 耳朵輕微擺動
+                creature.userData.leftEar.rotation.z = -0.3 + Math.sin(time * 0.5) * 0.1;
+                creature.userData.rightEar.rotation.z = 0.3 - Math.sin(time * 0.5) * 0.1;
+            }
+
+            // 泡泡動畫
+            bubbles.forEach(bubble => {
+                bubble.position.y += bubble.userData.speed;
+                bubble.position.x += Math.sin(bubble.position.y * bubble.userData.wobble) * 0.02;
+
+                if (bubble.position.y > 5) {
+                    bubble.position.y = -5;
+                    bubble.position.x = (Math.random() - 0.5) * 10;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // 觸控控制
+        function setupControls() {
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (isDragging && creature) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+
+                    creature.rotation.y += deltaX * 0.01;
+                    creature.rotation.x += deltaY * 0.01;
+
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+
+            renderer.domElement.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            // 觸控支援
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                previousMousePosition = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
+            });
+
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                if (isDragging && creature) {
+                    const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                    const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                    creature.rotation.y += deltaX * 0.01;
+                    creature.rotation.x += deltaY * 0.01;
+
+                    previousMousePosition = {
+                        x: e.touches[0].clientX,
+                        y: e.touches[0].clientY
+                    };
+                }
+            });
+
+            renderer.domElement.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+
+            // 點擊互動
+            renderer.domElement.addEventListener('click', () => {
+                if (!isDragging) {
+                    creatureBounce();
+                }
+            });
+        }
+
+        function creatureBounce() {
+            if (!creature || isAnimating) return;
+            
+            isAnimating = true;
+            const startY = creature.position.y;
+            const startTime = Date.now();
+            const duration = 500;
+
+            function bounce() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+
+                if (progress < 1) {
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    creature.position.y = startY + Math.sin(easeProgress * Math.PI) * 0.5;
+                    requestAnimationFrame(bounce);
+                } else {
+                    creature.position.y = startY;
+                    isAnimating = false;
+                }
+            }
+            bounce();
+        }
+
+        function resetCamera() {
+            if (creature) {
+                creature.rotation.set(0, 0, 0);
+            }
+            showMessage('🔄', '視角已重置');
+        }
+
+        // ===== 遊戲邏輯 =====
+        function loadGame() {
+            const saved = localStorage.getItem('fantasyPet3DSave');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                updateUI();
+            }
+            startDecayTimer();
+        }
+
+        function saveGame() {
+            localStorage.setItem('fantasyPet3DSave', JSON.stringify(gameState));
+        }
+
+        function updateUI() {
+            document.getElementById('coins').textContent = gameState.coins;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('days').textContent = `第 ${gameState.days} 天`;
+            document.getElementById('hunger').textContent = gameState.hunger;
+            document.getElementById('happiness').textContent = gameState.happiness;
+            document.getElementById('cleanliness').textContent = gameState.cleanliness;
+            document.getElementById('lovePercent').textContent = `${gameState.love}%`;
+            document.getElementById('loveFill').style.width = `${gameState.love}%`;
+        }
+
+        function showMessage(icon, text, detail = '') {
+            const popup = document.getElementById('messagePopup');
+            document.getElementById('messageIcon').textContent = icon;
+            document.getElementById('messageText').textContent = text;
+            document.getElementById('messageDetail').textContent = detail;
+            popup.classList.add('show');
+            setTimeout(() => popup.classList.remove('show'), 2000);
+        }
+
+        function feedPet() {
+            if (gameState.coins < 10) {
+                showMessage('💰', '金幣不足！', '需要 10 金幣');
+                return;
+            }
+            gameState.coins -= 10;
+            gameState.hunger = Math.min(100, gameState.hunger + 20);
+            gameState.love = Math.min(100, gameState.love + 3);
+            creatureBounce();
+            showMessage('😋', '好好吃！', '+20 飽食度 | +3 好感度');
+            updateUI();
+            saveGame();
+        }
+
+        function playWithPet() {
+            if (gameState.coins < 5) {
+                showMessage('💰', '金幣不足！', '需要 5 金幣');
+                return;
+            }
+            gameState.coins -= 5;
+            gameState.happiness = Math.min(100, gameState.happiness + 25);
+            gameState.hunger = Math.max(0, gameState.hunger - 10);
+            gameState.love = Math.min(100, gameState.love + 5);
+            creatureBounce();
+            showMessage('😆', '好開心！', '+25 快樂 | +5 好感度');
+            updateUI();
+            saveGame();
+        }
+
+        function cleanPet() {
+            if (gameState.coins < 5) {
+                showMessage('💰', '金幣不足！', '需要 5 金幣');
+                return;
+            }
+            gameState.coins -= 5;
+            gameState.cleanliness = Math.min(100, gameState.cleanliness + 30);
+            gameState.love = Math.min(100, gameState.love + 3);
+            creatureBounce();
+            showMessage('🛁', '好舒服！', '+30 清潔度 | +3 好感度');
+            updateUI();
+            saveGame();
+        }
+
+        function giveTreat() {
+            if (gameState.coins < 20) {
+                showMessage('💰', '金幣不足！', '需要 20 金幣');
+                return;
+            }
+            gameState.coins -= 20;
+            gameState.happiness = Math.min(100, gameState.happiness + 30);
+            gameState.love = Math.min(100, gameState.love + 10);
+            creatureBounce();
+            showMessage('🥰', '太幸福了！', '+30 快樂 | +10 好感度');
+            updateUI();
+            saveGame();
+        }
+
+        function petPet() {
+            gameState.happiness = Math.min(100, gameState.happiness + 5);
+            gameState.love = Math.min(100, gameState.love + 2);
+            creatureBounce();
+            const messages = ['好喜歡你！', '繼續摸我～', '好舒服～', '嘿嘿～'];
+            showMessage('🤗', messages[Math.floor(Math.random() * messages.length)], '+5 快樂 | +2 好感度');
+            updateUI();
+            saveGame();
+        }
+
+        function startDecayTimer() {
+            setInterval(() => {
+                gameState.hunger = Math.max(0, gameState.hunger - 1);
+                gameState.happiness = Math.max(0, gameState.happiness - 1);
+                gameState.cleanliness = Math.max(0, gameState.cleanliness - 1);
+                gameState.coins += 1;
+                updateUI();
+                saveGame();
+            }, 30000);
+        }
+
+        // 初始化
+        window.addEventListener('load', () => {
+            initThreeJS();
+            loadGame();
+        });
+    </script>
+</body>
+</html>
