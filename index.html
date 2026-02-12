@@ -463,25 +463,96 @@
         function createCreature() {
             creature = new THREE.Group();
 
-            // 主身體 - 毛茸茸的球體
+            // === 毛髮層系統 ===
+            // 第1層：內核（最深處，最暗）
+            const coreGeometry = new THREE.SphereGeometry(1.0, 32, 32);
+            const coreMaterial = new THREE.MeshStandardMaterial({
+                color: 0xd4f1f4,
+                roughness: 0.9,
+                metalness: 0
+            });
+            const core = new THREE.Mesh(coreGeometry, coreMaterial);
+            creature.add(core);
+
+            // 第2層：中層毛髮（半透明蓬鬆感）
+            const midFurGeometry = new THREE.SphereGeometry(1.15, 32, 32);
+            const midFurMaterial = new THREE.MeshStandardMaterial({
+                color: 0xe0f2fe,
+                roughness: 0.85,
+                metalness: 0,
+                transparent: true,
+                opacity: 0.6,
+                side: THREE.DoubleSide
+            });
+            const midFur = new THREE.Mesh(midFurGeometry, midFurMaterial);
+            creature.add(midFur);
+
+            // 第3層：外層毛髮（最亮，最蓬鬆）
             const bodyGeometry = new THREE.SphereGeometry(1.2, 32, 32);
             const bodyMaterial = new THREE.MeshStandardMaterial({
                 color: 0xf0f9ff,
-                roughness: 0.7,
-                metalness: 0.1,
-                emissive: 0xe0f2fe,
-                emissiveIntensity: 0.2
+                roughness: 0.75,
+                metalness: 0.05,
+                emissive: 0xffffff,
+                emissiveIntensity: 0.15,
+                transparent: true,
+                opacity: 0.9,
+                side: THREE.DoubleSide
             });
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
             body.castShadow = true;
             body.receiveShadow = true;
             creature.add(body);
 
-            // 左耳
-            const earGeometry = new THREE.ConeGeometry(0.25, 0.7, 16);
+            // === 毛髮細節（小毛球裝飾）===
+            const fluffGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+            const fluffMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.9,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            // 在身體周圍隨機分佈小毛球
+            for (let i = 0; i < 30; i++) {
+                const fluff = new THREE.Mesh(fluffGeometry, fluffMaterial);
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                const radius = 1.15 + Math.random() * 0.1;
+                
+                fluff.position.set(
+                    radius * Math.sin(phi) * Math.cos(theta),
+                    radius * Math.cos(phi),
+                    radius * Math.sin(phi) * Math.sin(theta)
+                );
+                fluff.scale.set(
+                    0.8 + Math.random() * 0.4,
+                    0.8 + Math.random() * 0.4,
+                    0.8 + Math.random() * 0.4
+                );
+                creature.add(fluff);
+            }
+
+            // === 左耳（多層毛髮）===
+            // 耳朵底層
+            const earBaseGeometry = new THREE.ConeGeometry(0.28, 0.75, 20);
+            const earBaseMaterial = new THREE.MeshStandardMaterial({
+                color: 0xe0f2fe,
+                roughness: 0.8
+            });
+            const leftEarBase = new THREE.Mesh(earBaseGeometry, earBaseMaterial);
+            leftEarBase.position.set(-0.5, 1.2, 0.15);
+            leftEarBase.rotation.z = -0.3;
+            leftEarBase.castShadow = true;
+            creature.add(leftEarBase);
+
+            // 耳朵主體
+            const earGeometry = new THREE.ConeGeometry(0.25, 0.7, 20);
             const earMaterial = new THREE.MeshStandardMaterial({
                 color: 0xf0f9ff,
-                roughness: 0.7
+                roughness: 0.7,
+                transparent: true,
+                opacity: 0.95
             });
             const leftEar = new THREE.Mesh(earGeometry, earMaterial);
             leftEar.position.set(-0.5, 1.2, 0.2);
@@ -489,18 +560,42 @@
             leftEar.castShadow = true;
             creature.add(leftEar);
 
-            // 右耳
+            // 耳朵外層（蓬鬆感）
+            const earFluffGeometry = new THREE.ConeGeometry(0.27, 0.72, 16);
+            const earFluffMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.9,
+                transparent: true,
+                opacity: 0.5
+            });
+            const leftEarFluff = new THREE.Mesh(earFluffGeometry, earFluffMaterial);
+            leftEarFluff.position.set(-0.5, 1.2, 0.25);
+            leftEarFluff.rotation.z = -0.3;
+            creature.add(leftEarFluff);
+
+            // === 右耳（多層毛髮）===
+            const rightEarBase = new THREE.Mesh(earBaseGeometry, earBaseMaterial);
+            rightEarBase.position.set(0.5, 1.2, 0.15);
+            rightEarBase.rotation.z = 0.3;
+            rightEarBase.castShadow = true;
+            creature.add(rightEarBase);
+
             const rightEar = new THREE.Mesh(earGeometry, earMaterial);
             rightEar.position.set(0.5, 1.2, 0.2);
             rightEar.rotation.z = 0.3;
             rightEar.castShadow = true;
             creature.add(rightEar);
 
-            // 左耳內側
-            const innerEarGeometry = new THREE.ConeGeometry(0.12, 0.35, 16);
+            const rightEarFluff = new THREE.Mesh(earFluffGeometry, earFluffMaterial);
+            rightEarFluff.position.set(0.5, 1.2, 0.25);
+            rightEarFluff.rotation.z = 0.3;
+            creature.add(rightEarFluff);
+
+            // 耳內側
+            const innerEarGeometry = new THREE.ConeGeometry(0.13, 0.38, 16);
             const innerEarMaterial = new THREE.MeshStandardMaterial({
                 color: 0xfecaca,
-                roughness: 0.8
+                roughness: 0.7
             });
             const leftInnerEar = new THREE.Mesh(innerEarGeometry, innerEarMaterial);
             leftInnerEar.position.set(-0.5, 1.2, 0.3);
@@ -512,11 +607,46 @@
             rightInnerEar.rotation.z = 0.3;
             creature.add(rightInnerEar);
 
-            // 眼睛底座
-            const eyeWhiteGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+            // 耳尖小毛球
+            const earTipFluffGeometry = new THREE.SphereGeometry(0.08, 10, 10);
+            const earTipFluffMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.9,
+                transparent: true,
+                opacity: 0.7
+            });
+            const leftEarTipFluff = new THREE.Mesh(earTipFluffGeometry, earTipFluffMaterial);
+            leftEarTipFluff.position.set(-0.65, 1.75, 0.2);
+            creature.add(leftEarTipFluff);
+
+            const rightEarTipFluff = new THREE.Mesh(earTipFluffGeometry, earTipFluffMaterial);
+            rightEarTipFluff.position.set(0.65, 1.75, 0.2);
+            creature.add(rightEarTipFluff);
+
+            // === 眼睛細節升級 ===
+            
+            // 眼影/眼周毛髮（柔和陰影）
+            const eyeShadowGeometry = new THREE.SphereGeometry(0.32, 16, 16);
+            const eyeShadowMaterial = new THREE.MeshStandardMaterial({
+                color: 0xbae6fd,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.9
+            });
+            const leftEyeShadow = new THREE.Mesh(eyeShadowGeometry, eyeShadowMaterial);
+            leftEyeShadow.position.set(-0.35, 0.28, 0.95);
+            creature.add(leftEyeShadow);
+
+            const rightEyeShadow = new THREE.Mesh(eyeShadowGeometry, eyeShadowMaterial);
+            rightEyeShadow.position.set(0.35, 0.28, 0.95);
+            creature.add(rightEyeShadow);
+
+            // 眼白
+            const eyeWhiteGeometry = new THREE.SphereGeometry(0.25, 20, 20);
             const eyeWhiteMaterial = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
-                roughness: 0.2
+                roughness: 0.15,
+                metalness: 0.1
             });
             const leftEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
             leftEyeWhite.position.set(-0.35, 0.3, 1.0);
@@ -526,12 +656,15 @@
             rightEyeWhite.position.set(0.35, 0.3, 1.0);
             creature.add(rightEyeWhite);
 
-            // 眼球
-            const eyeGeometry = new THREE.SphereGeometry(0.18, 16, 16);
-            const eyeMaterial = new THREE.MeshStandardMaterial({
+            // 眼球（有漸層光澤）
+            const eyeGeometry = new THREE.SphereGeometry(0.18, 24, 24);
+            const eyeMaterial = new THREE.MeshPhysicalMaterial({
                 color: 0x0ea5e9,
-                roughness: 0.1,
-                metalness: 0.3
+                roughness: 0.05,
+                metalness: 0.2,
+                clearcoat: 0.8,
+                clearcoatRoughness: 0.1,
+                reflectivity: 1
             });
             const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
             leftEye.position.set(-0.35, 0.3, 1.15);
@@ -541,77 +674,218 @@
             rightEye.position.set(0.35, 0.3, 1.15);
             creature.add(rightEye);
 
-            // 瞳孔
-            const pupilGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+            // 瞳孔（深邃黑洞）
+            const pupilGeometry = new THREE.SphereGeometry(0.09, 20, 20);
             const pupilMaterial = new THREE.MeshStandardMaterial({
-                color: 0x0369a1,
-                roughness: 0.3
+                color: 0x0c4a6e,
+                roughness: 0.1,
+                metalness: 0.5
             });
             const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-            leftPupil.position.set(-0.35, 0.3, 1.25);
+            leftPupil.position.set(-0.35, 0.3, 1.24);
             creature.add(leftPupil);
 
             const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
-            rightPupil.position.set(0.35, 0.3, 1.25);
+            rightPupil.position.set(0.35, 0.3, 1.24);
             creature.add(rightPupil);
 
-            // 眼睛高光
-            const highlightGeometry = new THREE.SphereGeometry(0.06, 8, 8);
-            const highlightMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff
+            // 主高光（大星星）
+            const mainHighlightGeometry = new THREE.SphereGeometry(0.07, 12, 12);
+            const mainHighlightMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.95
             });
-            const leftHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
-            leftHighlight.position.set(-0.3, 0.38, 1.28);
-            creature.add(leftHighlight);
+            const leftMainHighlight = new THREE.Mesh(mainHighlightGeometry, mainHighlightMaterial);
+            leftMainHighlight.position.set(-0.29, 0.38, 1.28);
+            creature.add(leftMainHighlight);
 
-            const rightHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
-            rightHighlight.position.set(0.4, 0.38, 1.28);
-            creature.add(rightHighlight);
+            const rightMainHighlight = new THREE.Mesh(mainHighlightGeometry, mainHighlightMaterial);
+            rightMainHighlight.position.set(0.41, 0.38, 1.28);
+            creature.add(rightMainHighlight);
 
-            // 鼻子
-            const noseGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            // 次高光（小星星）
+            const secHighlightGeometry = new THREE.SphereGeometry(0.04, 10, 10);
+            const secHighlightMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
+            });
+            const leftSecHighlight = new THREE.Mesh(secHighlightGeometry, secHighlightMaterial);
+            leftSecHighlight.position.set(-0.38, 0.32, 1.27);
+            creature.add(leftSecHighlight);
+
+            const rightSecHighlight = new THREE.Mesh(secHighlightGeometry, secHighlightMaterial);
+            rightSecHighlight.position.set(0.32, 0.32, 1.27);
+            creature.add(rightSecHighlight);
+
+            // 眼睛邊緣光暈
+            const eyeGlowGeometry = new THREE.SphereGeometry(0.28, 16, 16);
+            const eyeGlowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x7dd3fc,
+                transparent: true,
+                opacity: 0.15
+            });
+            const leftEyeGlow = new THREE.Mesh(eyeGlowGeometry, eyeGlowMaterial);
+            leftEyeGlow.position.set(-0.35, 0.3, 1.05);
+            creature.add(leftEyeGlow);
+
+            const rightEyeGlow = new THREE.Mesh(eyeGlowGeometry, eyeGlowMaterial);
+            rightEyeGlow.position.set(0.35, 0.3, 1.05);
+            creature.add(rightEyeGlow);
+
+            // === 鼻子細節 ===
+            const noseGeometry = new THREE.SphereGeometry(0.11, 20, 20);
             const noseMaterial = new THREE.MeshStandardMaterial({
                 color: 0xfda4af,
-                roughness: 0.5
+                roughness: 0.4,
+                metalness: 0.1
             });
             const nose = new THREE.Mesh(noseGeometry, noseMaterial);
-            nose.position.set(0, 0, 1.2);
+            nose.position.set(0, 0.05, 1.22);
             creature.add(nose);
 
-            // 腮紅
-            const blushGeometry = new THREE.CircleGeometry(0.15, 16);
+            // 鼻子高光
+            const noseHighlightGeometry = new THREE.SphereGeometry(0.035, 10, 10);
+            const noseHighlightMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.7
+            });
+            const noseHighlight = new THREE.Mesh(noseHighlightGeometry, noseHighlightMaterial);
+            noseHighlight.position.set(-0.03, 0.08, 1.27);
+            creature.add(noseHighlight);
+
+            // === 嘴巴 ===
+            // 嘴巴線條（用圓環模擬微笑）
+            const mouthCurve = new THREE.EllipseCurve(
+                0, 0,              // 中心
+                0.2, 0.15,         // x, y 半徑
+                Math.PI * 1.1, Math.PI * 1.9,  // 起始角、結束角（下半部分）
+                false,             // 順時針
+                0                  // 旋轉
+            );
+            const mouthPoints = mouthCurve.getPoints(30);
+            const mouthGeometry = new THREE.BufferGeometry().setFromPoints(mouthPoints);
+            const mouthMaterial = new THREE.LineBasicMaterial({ 
+                color: 0xf472b6,
+                linewidth: 3
+            });
+            const mouth = new THREE.Line(mouthGeometry, mouthMaterial);
+            mouth.position.set(0, -0.1, 1.18);
+            creature.add(mouth);
+
+            // === 鬍鬚（更精緻）===
+            const whiskerMaterial = new THREE.LineBasicMaterial({ 
+                color: 0xe0f2fe,
+                transparent: true,
+                opacity: 0.6,
+                linewidth: 2
+            });
+
+            // 左鬍鬚
+            for (let i = 0; i < 3; i++) {
+                const whiskerPoints = [];
+                const startY = 0.05 + i * 0.15 - 0.15;
+                whiskerPoints.push(new THREE.Vector3(-0.6, startY, 1.0));
+                whiskerPoints.push(new THREE.Vector3(-1.2 - i * 0.1, startY + (i - 1) * 0.1, 0.9));
+                
+                const whiskerGeometry = new THREE.BufferGeometry().setFromPoints(whiskerPoints);
+                const whisker = new THREE.Line(whiskerGeometry, whiskerMaterial);
+                creature.add(whisker);
+            }
+
+            // 右鬍鬚
+            for (let i = 0; i < 3; i++) {
+                const whiskerPoints = [];
+                const startY = 0.05 + i * 0.15 - 0.15;
+                whiskerPoints.push(new THREE.Vector3(0.6, startY, 1.0));
+                whiskerPoints.push(new THREE.Vector3(1.2 + i * 0.1, startY + (i - 1) * 0.1, 0.9));
+                
+                const whiskerGeometry = new THREE.BufferGeometry().setFromPoints(whiskerPoints);
+                const whisker = new THREE.Line(whiskerGeometry, whiskerMaterial);
+                creature.add(whisker);
+            }
+
+            // === 腮紅（更柔和）===
+            const blushGeometry = new THREE.CircleGeometry(0.18, 20);
             const blushMaterial = new THREE.MeshBasicMaterial({
                 color: 0xfca5a5,
                 transparent: true,
-                opacity: 0.4
+                opacity: 0.35,
+                side: THREE.DoubleSide
             });
             const leftBlush = new THREE.Mesh(blushGeometry, blushMaterial);
-            leftBlush.position.set(-0.7, 0, 0.9);
-            leftBlush.rotation.y = -0.5;
+            leftBlush.position.set(-0.72, 0.05, 1.0);
+            leftBlush.rotation.y = -0.4;
             creature.add(leftBlush);
 
             const rightBlush = new THREE.Mesh(blushGeometry, blushMaterial);
-            rightBlush.position.set(0.7, 0, 0.9);
-            rightBlush.rotation.y = 0.5;
+            rightBlush.position.set(0.72, 0.05, 1.0);
+            rightBlush.rotation.y = 0.4;
             creature.add(rightBlush);
 
+            // 腮紅外層（柔光效果）
+            const blushGlowGeometry = new THREE.CircleGeometry(0.22, 20);
+            const blushGlowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xfecaca,
+                transparent: true,
+                opacity: 0.15,
+                side: THREE.DoubleSide
+            });
+            const leftBlushGlow = new THREE.Mesh(blushGlowGeometry, blushGlowMaterial);
+            leftBlushGlow.position.set(-0.73, 0.05, 0.98);
+            leftBlushGlow.rotation.y = -0.4;
+            creature.add(leftBlushGlow);
+
+            const rightBlushGlow = new THREE.Mesh(blushGlowGeometry, blushGlowMaterial);
+            rightBlushGlow.position.set(0.73, 0.05, 0.98);
+            rightBlushGlow.rotation.y = 0.4;
+            creature.add(rightBlushGlow);
+
+            // === 小裝飾：頭頂毛髮 ===
+            const topFluffGeometry = new THREE.SphereGeometry(0.15, 12, 12);
+            const topFluffMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.85,
+                transparent: true,
+                opacity: 0.8
+            });
+            const topFluff = new THREE.Mesh(topFluffGeometry, topFluffMaterial);
+            topFluff.position.set(0, 1.5, 0);
+            topFluff.scale.set(1, 1.3, 1);
+            creature.add(topFluff);
+
             scene.add(creature);
-            creature.userData = { leftEar, rightEar, body };
+            creature.userData = { 
+                leftEar, 
+                rightEar, 
+                leftEarFluff, 
+                rightEarFluff,
+                body, 
+                midFur, 
+                core,
+                leftEyeGlow,
+                rightEyeGlow
+            };
         }
 
         function createBubbles() {
-            const bubbleGeometry = new THREE.SphereGeometry(0.15, 16, 16);
-            const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.3,
-                roughness: 0,
-                metalness: 0,
-                transmission: 0.9,
-                thickness: 0.5
-            });
-
-            for (let i = 0; i < 15; i++) {
+            // 大泡泡
+            for (let i = 0; i < 12; i++) {
+                const size = 0.1 + Math.random() * 0.15;
+                const bubbleGeometry = new THREE.SphereGeometry(size, 20, 20);
+                const bubbleMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.25,
+                    roughness: 0,
+                    metalness: 0,
+                    transmission: 0.95,
+                    thickness: 0.8,
+                    clearcoat: 1,
+                    clearcoatRoughness: 0
+                });
                 const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
                 bubble.position.set(
                     (Math.random() - 0.5) * 10,
@@ -619,11 +893,63 @@
                     (Math.random() - 0.5) * 5
                 );
                 bubble.userData = {
-                    speed: Math.random() * 0.01 + 0.005,
-                    wobble: Math.random() * 0.02
+                    speed: Math.random() * 0.008 + 0.004,
+                    wobble: Math.random() * 0.02,
+                    size: size
                 };
                 scene.add(bubble);
                 bubbles.push(bubble);
+            }
+
+            // 小泡泡（更多、更輕）
+            for (let i = 0; i < 20; i++) {
+                const size = 0.04 + Math.random() * 0.08;
+                const bubbleGeometry = new THREE.SphereGeometry(size, 12, 12);
+                const bubbleMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.2,
+                    roughness: 0,
+                    metalness: 0,
+                    transmission: 0.9,
+                    thickness: 0.3
+                });
+                const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
+                bubble.position.set(
+                    (Math.random() - 0.5) * 12,
+                    Math.random() * -6,
+                    (Math.random() - 0.5) * 6
+                );
+                bubble.userData = {
+                    speed: Math.random() * 0.015 + 0.008,
+                    wobble: Math.random() * 0.03,
+                    size: size
+                };
+                scene.add(bubble);
+                bubbles.push(bubble);
+            }
+
+            // 閃光粒子
+            const sparkleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+            const sparkleMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.6
+            });
+            for (let i = 0; i < 15; i++) {
+                const sparkle = new THREE.Mesh(sparkleGeometry, sparkleMaterial);
+                sparkle.position.set(
+                    (Math.random() - 0.5) * 8,
+                    Math.random() * -4,
+                    (Math.random() - 0.5) * 4
+                );
+                sparkle.userData = {
+                    speed: Math.random() * 0.02 + 0.01,
+                    wobble: Math.random() * 0.04,
+                    twinkle: Math.random() * Math.PI * 2
+                };
+                scene.add(sparkle);
+                bubbles.push(sparkle);
             }
         }
 
@@ -633,27 +959,74 @@
             const time = Date.now() * 0.001;
 
             // 生物呼吸動畫
-            if (creature) {
+            if (creature && creature.userData) {
+                // 整體漂浮
                 creature.position.y = Math.sin(time * 0.8) * 0.1;
-                creature.userData.body.scale.set(
-                    1 + Math.sin(time * 0.8) * 0.03,
-                    1 + Math.sin(time * 0.8) * 0.03,
-                    1 + Math.sin(time * 0.8) * 0.03
-                );
+                
+                // 身體呼吸（多層同步）
+                const breathScale = 1 + Math.sin(time * 0.8) * 0.03;
+                if (creature.userData.core) {
+                    creature.userData.core.scale.set(breathScale, breathScale, breathScale);
+                }
+                if (creature.userData.midFur) {
+                    creature.userData.midFur.scale.set(
+                        breathScale * 1.02, 
+                        breathScale * 1.02, 
+                        breathScale * 1.02
+                    );
+                }
+                if (creature.userData.body) {
+                    creature.userData.body.scale.set(
+                        breathScale * 1.04, 
+                        breathScale * 1.04, 
+                        breathScale * 1.04
+                    );
+                }
 
                 // 耳朵輕微擺動
-                creature.userData.leftEar.rotation.z = -0.3 + Math.sin(time * 0.5) * 0.1;
-                creature.userData.rightEar.rotation.z = 0.3 - Math.sin(time * 0.5) * 0.1;
+                if (creature.userData.leftEar) {
+                    creature.userData.leftEar.rotation.z = -0.3 + Math.sin(time * 0.5) * 0.1;
+                }
+                if (creature.userData.rightEar) {
+                    creature.userData.rightEar.rotation.z = 0.3 - Math.sin(time * 0.5) * 0.1;
+                }
+                if (creature.userData.leftEarFluff) {
+                    creature.userData.leftEarFluff.rotation.z = -0.3 + Math.sin(time * 0.5) * 0.1;
+                }
+                if (creature.userData.rightEarFluff) {
+                    creature.userData.rightEarFluff.rotation.z = 0.3 - Math.sin(time * 0.5) * 0.1;
+                }
+
+                // 眼睛發光閃爍
+                if (creature.userData.leftEyeGlow && creature.userData.rightEyeGlow) {
+                    const glowPulse = 0.15 + Math.sin(time * 2) * 0.08;
+                    creature.userData.leftEyeGlow.material.opacity = glowPulse;
+                    creature.userData.rightEyeGlow.material.opacity = glowPulse;
+                }
             }
 
-            // 泡泡動畫
+            // 泡泡和粒子動畫
             bubbles.forEach(bubble => {
                 bubble.position.y += bubble.userData.speed;
                 bubble.position.x += Math.sin(bubble.position.y * bubble.userData.wobble) * 0.02;
 
+                // 閃光粒子閃爍效果
+                if (bubble.userData.twinkle !== undefined) {
+                    bubble.userData.twinkle += 0.05;
+                    bubble.material.opacity = 0.3 + Math.sin(bubble.userData.twinkle) * 0.3;
+                    bubble.scale.setScalar(0.8 + Math.sin(bubble.userData.twinkle * 2) * 0.2);
+                }
+
+                // 泡泡微旋轉
+                if (bubble.userData.size) {
+                    bubble.rotation.x += 0.01;
+                    bubble.rotation.y += 0.01;
+                }
+
                 if (bubble.position.y > 5) {
-                    bubble.position.y = -5;
+                    bubble.position.y = -5 - Math.random() * 2;
                     bubble.position.x = (Math.random() - 0.5) * 10;
+                    bubble.position.z = (Math.random() - 0.5) * 5;
                 }
             });
 
